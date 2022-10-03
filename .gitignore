@@ -1,5 +1,5 @@
 /target
-x*
+chunk*
 input
 
 # Added by cargo

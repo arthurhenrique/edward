@@ -7,7 +7,7 @@ const LINE_ENDING: &'static str = "\r\n";
 #[cfg(not(windows))]
 const LINE_ENDING: &'static str = "\n";
 
-pub fn split(file_path: &str, chunk_size: &u32, prefix_name: &str) -> Result<(), Error>{
+pub fn split(file_path: &str, chunk_size: &u32, prefix_name: &str) -> Result<(), Error> {
     let input = r_buffer(file_path)?;
 
     let lines = input.lines().flatten();

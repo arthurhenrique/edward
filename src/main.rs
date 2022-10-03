@@ -12,8 +12,12 @@ struct WithPositional {
     path: String,
     #[argh(option, default = "1000", description = "the size of each chunk")]
     chunk_size: u32,
-    #[argh(option, default = "String::from(\"chunk_\")", description = "prefix of the name of chunks")]
-    prefix: String
+    #[argh(
+        option,
+        default = "String::from(\"chunk_\")",
+        description = "prefix of the name of chunks"
+    )]
+    prefix: String,
 }
 
 fn main() -> std::io::Result<()> {
