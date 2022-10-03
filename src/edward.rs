@@ -1,66 +1,61 @@
-use std::fs;
-use std::fs::File;
+use std::io::{BufRead, Error, Write};
 
-const MAX: u32 = 1000;
-const PREFIX_NAME: &str = "x";
+use crate::file::{r_buffer, w_buffer};
 
 #[cfg(windows)]
 const LINE_ENDING: &'static str = "\r\n";
 #[cfg(not(windows))]
 const LINE_ENDING: &'static str = "\n";
 
-pub fn split(file_path: &str) {
-    let content = fs::read_to_string(file_path).expect("should have been able to read");
+pub fn split(file_path: &str, chunk_size: &u32, prefix_name: &str) -> Result<(), Error>{
+    let input = r_buffer(file_path)?;
 
-    let mut control: u32 = 0;
-    let mut sufix: u32 = 0;
-    let mut text = format!("");
+    let lines = input.lines().flatten();
 
-    let lines = content.split("\n").collect::<Vec<&str>>();
-    let sz = lines.len();
+    for (line_idx, line) in lines.enumerate() {
+        let sufix = line_idx as u32 / chunk_size;
+        let file_name = format!("{}{:03}", prefix_name, sufix);
+        let chunk_size = chunk_size.clone() as usize;
+        let mut w_buf = w_buffer(&file_name, chunk_size)?;
+        w_buf.write(&format!("{}{}", line, LINE_ENDING).as_bytes())?;
+    }
 
-    (0..sz).for_each(|line| {
-        if control == MAX || line == sz - 1 {
-            control = 0;
-            sufix += 1;
-            let file_name = format!("{}{:03}", PREFIX_NAME, sufix);
-            let _ = File::create(&file_name);
-            let _ = fs::write(&file_name, &text);
-            text = format!("");
-        }
-        text.push_str(&format!("{}{}", lines[line], LINE_ENDING));
-        control += 1;
-    });
+    return Ok(());
 }
 
 #[test]
 fn test_odd() {
+    use std::fs;
+    use std::fs::File;
+
     let file_name = "input";
+    let chunk_size = 1;
     let _ = File::create(&file_name);
     let _ = fs::write::<&&str, String>(
         &file_name,
         "edward scissorhands\n"
-            .repeat((MAX * 2 + 1).try_into().unwrap())
+            .repeat((&chunk_size * 2 + 1).try_into().unwrap())
             .try_into()
             .unwrap(),
     );
+    let prefix = "x";
 
-    split(file_name);
+    split(file_name, &chunk_size, &prefix).unwrap();
 
     let paths = fs::read_dir("./").unwrap();
     let mut acc = 0;
     for path in paths {
         let s = format!("{}", path.unwrap().path().display());
         println!("{}", s);
-        if s.starts_with(&format!("./{}", PREFIX_NAME)) {
+        if s.starts_with(&format!("./{}", &prefix)) {
             acc += 1;
         }
     }
 
-    fs::remove_file("input");
-    fs::remove_file("x001");
-    fs::remove_file("x002");
-    fs::remove_file("x003");
+    fs::remove_file("input").unwrap();
+    fs::remove_file("x000").unwrap();
+    fs::remove_file("x001").unwrap();
+    fs::remove_file("x002").unwrap();
 
     assert_eq!(acc, 3)
 }
