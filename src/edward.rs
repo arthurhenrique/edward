@@ -1,11 +1,15 @@
-use std::env;
 use std::fs;
 use std::fs::File;
 
 const MAX: u32 = 1000;
 const PREFIX_NAME: &str = "x";
 
-fn split(file_path: &str) {
+#[cfg(windows)]
+const LINE_ENDING: &'static str = "\r\n";
+#[cfg(not(windows))]
+const LINE_ENDING: &'static str = "\n";
+
+pub fn split(file_path: &str) {
     let content = fs::read_to_string(file_path).expect("should have been able to read");
 
     let mut control: u32 = 0;
@@ -24,21 +28,13 @@ fn split(file_path: &str) {
             let _ = fs::write(&file_name, &text);
             text = format!("");
         }
-        text.push_str(&format!("{}\n", lines[line]));
+        text.push_str(&format!("{}{}", lines[line], LINE_ENDING));
         control += 1;
     });
 }
 
-fn main() -> std::io::Result<()> {
-    let args: Vec<String> = env::args().collect();
-    let file_path = &args[1];
-    split(file_path);
-
-    Ok(())
-}
-
 #[test]
-fn test() {
+fn test_odd() {
     let file_name = "input";
     let _ = File::create(&file_name);
     let _ = fs::write::<&&str, String>(
@@ -60,6 +56,11 @@ fn test() {
             acc += 1;
         }
     }
+
+    fs::remove_file("input");
+    fs::remove_file("x001");
+    fs::remove_file("x002");
+    fs::remove_file("x003");
 
     assert_eq!(acc, 3)
 }
